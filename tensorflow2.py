@@ -4,21 +4,21 @@ import tensorflow as tf
 
 """可以进行图片分类的模型"""
 
+# 加载 Fashion MNIST 数据集
 fashion_mnist = tf.keras.datasets.fashion_mnist
 (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+train_images = train_images / 255.0
+test_images = test_images / 255.0
 
 class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
-train_images = train_images / 255.0
-test_images = test_images / 255.0
-
+# 构建模型
 model = tf.keras.Sequential([
     tf.keras.layers.Flatten(input_shape=(28, 28)),
     tf.keras.layers.Dense(128, activation='relu'),
     tf.keras.layers.Dense(10)
 ])
-
 model.compile(optimizer='adam',
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
@@ -57,16 +57,20 @@ def plot_value_array(i, predictions_array, true_label):
     thisplot[true_label].set_color('blue')
 
 
+# 向模型馈送数据
 model.fit(train_images, train_labels, epochs=10)
 
+# 评估准确率
 test_loss, test_acc = model.evaluate(test_images, test_labels, verbose=2)
 print('\n测试精度:', test_acc)
 
+# 进行预测
 probability_model = tf.keras.Sequential([model,
                                          tf.keras.layers.Softmax()])
 predictions = probability_model.predict(test_images)
 np.argmax(predictions[0])
 
+# 用模型绘图
 num_rows = 5
 num_cols = 3
 num_images = num_rows * num_cols
@@ -79,9 +83,9 @@ for i in range(num_images):
 plt.tight_layout()
 plt.show()
 
+# 使用训练好的模型对单个图像进行预测
 img = test_images[1]
 print(img.shape)
-
 img = (np.expand_dims(img, 0))
 print(img.shape)
 
