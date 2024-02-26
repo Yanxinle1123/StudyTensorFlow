@@ -1,5 +1,7 @@
 import os
+import re
 import shutil
+import string
 
 import tensorflow as tf
 
@@ -27,3 +29,23 @@ raw_train_ds = tf.keras.utils.text_dataset_from_directory(
     validation_split=0.2,
     subset='training',
     seed=seed)
+
+# 创建验证数据集
+raw_val_ds = tf.keras.utils.text_dataset_from_directory(
+    'aclImdb/train',
+    batch_size=batch_size,
+    validation_split=0.2,
+    subset='validation',
+    seed=seed)
+
+# 创建测试数据集
+raw_test_ds = tf.keras.utils.text_dataset_from_directory(
+    'aclImdb/test',
+    batch_size=batch_size)
+
+
+# 准备用于训练的数据集
+def custom_standardization(input_data):
+    lowercase = tf.strings.lower(input_data)
+    stripped_html = tf.strings.regex_replace(lowercase, '<br />', ' ')
+    return tf.strings.regex_replace(stripped_html, '[%s]' % re.escape(string.punctuation), '')
