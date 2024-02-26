@@ -3,10 +3,11 @@ import re
 import shutil
 import string
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras import layers
+from keras import losses
 
-# from keras import losses
 """可以进行文本分类的模型"""
 
 # 下载数据集
@@ -70,7 +71,71 @@ vectorize_layer.adapt(train_text)
 text_batch, label_batch = next(iter(raw_train_ds))
 first_review, first_label = text_batch[0], label_batch[0]
 
+# 创建模型
+embedding_dim = 16
+
+model = tf.keras.Sequential([
+    layers.Embedding(max_features + 1, embedding_dim),
+    layers.Dropout(0.2),
+    layers.GlobalAveragePooling1D(),
+    layers.Dropout(0.2),
+    layers.Dense(1)])
+
+model.summary()
+
+model.compile(loss=losses.BinaryCrossentropy(from_logits=True),
+              optimizer='adam',
+              metrics=tf.metrics.BinaryAccuracy(threshold=0.0))
+
 # 训练模型
 train_ds = raw_train_ds.map(vectorize_text)
 val_ds = raw_val_ds.map(vectorize_text)
 test_ds = raw_test_ds.map(vectorize_text)
+
+AUTOTUNE = tf.data.AUTOTUNE
+
+train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
+
+epochs = 10
+history = model.fit(
+    train_ds,
+    validation_data=val_ds,
+    epochs=epochs)
+
+# 评估模型
+loss, accuracy = model.evaluate(test_ds)
+
+print("\n损失值: ", loss)
+print("准确值: ", accuracy)
+
+# 创建准确率和损失随时间变化的图表
+history_dict = history.history
+history_dict.keys()
+
+acc = history_dict['binary_accuracy']
+val_acc = history_dict['val_binary_accuracy']
+loss = history_dict['loss']
+val_loss = history_dict['val_loss']
+
+epochs = range(1, len(acc) + 1)
+
+plt.plot(epochs, loss, 'bo', label='Training loss')
+
+plt.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.title('Training and validation loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.show()
+
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'b', label='Validation acc')
+plt.title('Training and validation accuracy')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend(loc='lower right')
+
+plt.show()
